@@ -2,29 +2,21 @@ const express = require('express');
 const mysql = require('mysql2');
 
 const app = express();
-app.use(express.json()); // JSON 형식의 요청을 처리하기 위한 미들웨어
+app.use(express.json());
 
-// MySQL 데이터베이스 연결 설정
-const db = mysql.createConnection({
-  host: '192.168.0.20',
+// MySQL 연결 풀 설정
+const pool = mysql.createPool({
+  host: 'my-mysql',
   user: 'junhaddi',
   password: '1qaz@wsx#wnsgk',
-  database: 'my_database'
-});
-
-// 데이터베이스 연결 확인
-db.connect((err) => {
-  if (err) {
-    console.error('MySQL 연결 실패:', err);
-  } else {
-    console.log('MySQL에 연결되었습니다.');
-  }
+  database: 'my_database',
+  waitForConnections: true,
+  connectionLimit: 10, // 최대 연결 수 설정
 });
 
 // GET 요청: 모든 점수 기록 조회
 app.get('/scores', (req, res) => {
-  const query = 'SELECT * FROM scores';
-  db.query(query, (err, results) => {
+  pool.query('SELECT * FROM scores', (err, results) => {
     if (err) {
       console.error('점수 기록 조회 실패:', err);
       res.status(500).send('서버 오류');
@@ -38,7 +30,7 @@ app.get('/scores', (req, res) => {
 app.post('/scores', (req, res) => {
   const { playerName, elapsedTime, flipCount, deathCount } = req.body;
   const query = 'INSERT INTO scores (playerName, elapsedTime, flipCount, deathCount) VALUES (?, ?, ?, ?)';
-  db.query(query, [playerName, elapsedTime, flipCount, deathCount], (err, result) => {
+  pool.query(query, [playerName, elapsedTime, flipCount, deathCount], (err, result) => {
     if (err) {
       console.error('점수 기록 추가 실패:', err);
       res.status(500).send('서버 오류');
